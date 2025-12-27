@@ -1,6 +1,11 @@
 from django.core.exceptions import ValidationError
 from rest_framework import serializers
 from django.core.validators import RegexValidator
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework_simplejwt.serializers import TokenRefreshSerializer
+
 from accounts.models import CustomUser
 from accounts.utils import validate_password
 from .models import OTP
@@ -48,14 +53,11 @@ class OTPVerifyserializers(serializers.Serializer):
     otp_code = serializers.CharField(max_length=6)
 
     def validate(self, data):
-        phone = data.get(('primary_mobile'))
-        otp = data.get(('otp_code'))
+        phone = data.get('primary_mobile')
+        otp = data.get('otp_code')
 
-        try:
-            otp_obj = OTP.objects.get(phone_number=phone, otp_code=otp)
-        except OTP.DoesNotExist:
-            raise serializers.ValidationError("OTP expired, please request a new one")
-
+        if not phone or not otp:
+            raise serializers.ValidationError("primary_mobile va otp_code majburiy")
         return data
 
 
@@ -123,6 +125,17 @@ class TwoFAInitiateSerializers(serializers.Serializer):
 
 class TwoFAVerifySerializer(serializers.Serializer):
     code = serializers.CharField()
+
+
+
+class RefreshTokenSerializers(serializers.Serializer):
+    refresh = serializers.CharField(
+        write_only=True,
+        required=True,
+        help_text="yaroqli refresh token"
+    )
+
+
 
 
 

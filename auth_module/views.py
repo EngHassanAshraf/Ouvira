@@ -1,10 +1,5 @@
-from ipaddress import ip_address
-
-from django.core.serializers import serialize
-from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.status import HTTP_400_BAD_REQUEST
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.views import APIView
@@ -17,25 +12,18 @@ import random
 
 from .models import OTP, LoginActivity
 from accounts.models import CustomUser
-from .serializers import SignupSerializer, OTPVerifyserializers, ResentOTPSerializers, LoginSerializer, TwoFAInitiateSerializers, TwoFAVerifySerializer
+from .serializers import SignupSerializer, RefreshTokenSerializers, OTPVerifyserializers, ResentOTPSerializers, LoginSerializer, TwoFAInitiateSerializers, TwoFAVerifySerializer
 from .utilits import verify_turnstile
 from .services.twofa_service import TwoFAService
 
-MAX_ATTEMPTS = 5
+MAX_ATTEMPTS = 3
 BLOCK_MINUTES = 15
 OTP_EXPIRY_MINUTES = 5
 
 
 # SIGNUP VIEW
 class SignUPView(APIView):
-    def get(self, request):
-        return Response({
-            "message": "Bu endpoint faqat POST uchun. Malumot yuboring: full_name va primary_mobile",
-            "cf-turnstile-response": "You can write anything you want right now, it's not in the works yet.",
-                "full_name": "full name",
-                "primary_mobile": "+998909999999"
 
-        })
     @swagger_auto_schema(request_body=SignupSerializer)
     def post(self, request):
         serializer = SignupSerializer(data=request.data)
@@ -127,11 +115,6 @@ class OTPVerifyView(APIView):
 
 class ResentOTPView(APIView):
 
-    def get(self, request):
-        return Response({
-            "message": "bu end point resent otp ni tekshirish uchun ",
-            "cf-turnstile-response": "You can write anything you want right now, it's not in the works yet."
-        })
     @swagger_auto_schema(request_body=ResentOTPSerializers)
     def post(self, request):
         token = request.data.get("cf-turnstile-response")
@@ -158,13 +141,11 @@ class ResentOTPView(APIView):
         otp_code = str(random.randint(100000, 999999))
         expires_at = timezone.now() + timedelta(minutes=OTP_EXPIRY_MINUTES)
 
-
         OTP.objects.create(
             phone_number=phone_number,
             otp_code=otp_code,
             expires_at=expires_at,
-            attempts=expires_at,
-            attampts=0,
+            attempts=0,
             is_blocked=False,
             blocked_until=None
         )
@@ -254,20 +235,24 @@ class LogouteView(APIView):
 
 class RefreshTokenView(APIView):
     permission_classes = [permissions.AllowAny]
-    swagger_auto_schema(request_body="refresh")
+
+    @swagger_auto_schema(request_body=RefreshTokenSerializers)
     def post(self, request):
+        serializer = RefreshTokenSerializers(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        refresh_token = serializer.validated_data['refresh']
         try:
-            refresh_token = request.data['refresh']
             token = RefreshToken(refresh_token)
             new_access = str(token.access_token)
-            return Response({"access": new_access})
+            return Response({"access": new_access}, status=status.HTTP_200_OK)
         except Exception as e:
-            return Response({"errors": str(e)}, status=HTTP_400_BAD_REQUEST)
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class TwoFAEnableInitiateView(APIView):
     permission_classes = [IsAuthenticated]
-    swagger_auto_schema(request_body=TwoFAInitiateSerializers)
+    @swagger_auto_schema(request_body=TwoFAInitiateSerializers)
     def post(self, request):
         user = request.user
 
@@ -286,7 +271,7 @@ class TwoFAEnableInitiateView(APIView):
 
 class TwoFAEnableVerifyView(APIView):
     permission_classes = [IsAuthenticated]
-    swagger_auto_schema(request_body=TwoFAVerifySerializer)
+    @swagger_auto_schema(request_body=TwoFAVerifySerializer)
     def post(self, request):
         user = request.user
         serializer = TwoFAVerifySerializer(data=request.data)
@@ -307,7 +292,7 @@ class TwoFAEnableVerifyView(APIView):
 class Login2FAVerifyView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
-    swagger_auto_schema(request_body=JWTAuthentication)
+    # @swagger_auto_schema(request_body=JWTAuthentication)
     def post(self, request):
         user = request.user
         code = request.data.get("code")
