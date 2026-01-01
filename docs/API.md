@@ -108,3 +108,93 @@ Response format:
   "status": "success | warning | error",
   "message": "string"
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# POST /api/register-owner/ #
+Assigns a user as Account Owner and updates user details. Only authorized users can call.
+
+
+*** Request Body: Example: ***
+```json
+{
+  "primary_mobile": "+201234567890",
+  "username": "Ahmed Ali",
+  "email": "ahmed@example.com",
+  "password": "StrongPass123"
+}
+```
+
+Responses, Success
+```jsoN
+{
+  "status": "success",
+  "message": "You have been assigned the role of Account Owner."
+}
+```
+
+
+*** Error – User not found ***
+```json
+{
+  "status": "error",
+  "message": "No account was found with the provided information."
+}
+```
+HTTP Status: 400 Bad Request
+
+Error – Invalid invite link
+```json
+{
+  "status": "error",
+  "message": "The invitation link is invalid or has expired."
+}
+```
+HTTP Status: 400 Bad Request
+
+
+Error – System error
+```json
+{
+  "status": "error",
+  "message": "An unexpected error occurred. Please try again later."
+}
+```
+HTTP Status: 500 Internal Server Error
+
+*** Notes: ***
+OTP must be verified before assigning user as Account Owner
+Only users with proper permissions can call this endpoint
+All messages are standardized via SUCCESS_MESSAGES and ERROR_MESSAGES
+
