@@ -4,13 +4,12 @@ Telefon raqami va full name bilan yangi user yaratish yoki mavjud userni olish
 Yangi OTP generatsiya qilinadi va 5 daqiqa davomida amal qiladi
 
 
-***Request Body*** 
-```json
+Request Body 
+json
     {
       "primary_mobile": "string",   // required, foydalanuvchi telefon raqami
       "full_name": "string"         // required, foydalanuvchi to‘liq ismi
     }
-```
 Response Examples
 Success (200 OK) : 
 json:

@@ -1,5 +1,3 @@
-from functools import partial
-
 import pyotp
 from drf_yasg.utils import swagger_auto_schema
 from requests import session
@@ -12,7 +10,6 @@ from django.utils import timezone
 from datetime import timedelta
 import random
 
-from core.messages.warning import WARNING_MESSAGES
 from .models import OTP, LoginActivity
 from accounts.models import CustomUser, TwoALoginSession
 from .serializers import (
@@ -22,7 +19,8 @@ from .serializers import (
 from .utilits import verify_turnstile
 from core.messages.error import ERROR_MESSAGES
 from core.messages.success import SUCCESS_MESSAGES
-from core.messages.success import SUCCESS_MESSAGES
+from core.messages.warning import WARNING_MESSAGES
+
 
 MAX_ATTEMPTS = 3
 BLOCK_MINUTES = 15

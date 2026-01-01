@@ -1,5 +1,7 @@
 from rest_framework.exceptions import PermissionDenied
 from .models import CustomUser
+from core.exceptions import BusinessException
+from core.messages.error import ERROR_MESSAGES
 
 
 
@@ -15,7 +17,7 @@ class UserService:
         user = CustomUser.objects.filter(primary_mobile=primary_mobile).first()
 
         if not user:
-            raise ValueError("OTP orqali ro'yxatdan o'tmagan foydalanuvchi")
+            raise BusinessException(ERROR_MESSAGES["ACCOUNT_NOT_FOUND"])
 
         password = data.pop("password", None)
 
