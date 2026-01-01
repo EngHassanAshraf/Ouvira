@@ -9,7 +9,8 @@ Yangi OTP generatsiya qilinadi va 5 daqiqa davomida amal qiladi
     {
       "primary_mobile": "string",   // required, foydalanuvchi telefon raqami
       "full_name": "string"         // required, foydalanuvchi to‘liq ismi
-    }```
+    }
+```
 Response Examples
 Success (200 OK) : 
 json:
