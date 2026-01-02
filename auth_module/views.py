@@ -1,8 +1,5 @@
-from spwd import struct_spwd
-
-import pyotp
+from django.conf import settings
 from drf_yasg.utils import swagger_auto_schema
-from requests import session
 from rest_framework.permissions import AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.views import APIView
@@ -22,6 +19,8 @@ from .utilits import verify_turnstile
 from core.messages.error import ERROR_MESSAGES
 from core.messages.success import SUCCESS_MESSAGES
 from core.messages.warning import WARNING_MESSAGES
+from utils.sms import send_sms
+
 
 
 MAX_ATTEMPTS = 3
@@ -61,23 +60,32 @@ class SignUPView(APIView):
             otp_code = str(random.randint(100000, 999999))
             expires_at = timezone.now() + timedelta(minutes=5)
 
-            OTP.objects.create(phone_number=phone_number, otp_code=otp_code, expires_at=expires_at)
-            print(f"OTP for {phone_number} is {otp_code}")
+            OTP.objects.create(
+                phone_number=phone_number,
+                otp_code=otp_code,
+                expires_at=expires_at
+            )
 
+            success = send_sms(phone_number,f"Your OTP code is {otp_code}", settings.TWILIO_PHONE_NUMBER)
+            if success:
+                return Response({
+                    "status": "success",
+                    "message": "OTP sent successfully"
+                })
+            else:
+                return Response({
+                    "status": "error",
+                    "message": "Failed to send OTP SMS."
+                })
+        except Exception as e:
+            print("SIGNUP ERROR:", str(e))
             return Response(
                 {
-                        "status": "success",
-                        "message": SUCCESS_MESSAGES["PHONE_OTP_SENT"],
-                        "expiry": "5 minutes"
-                      },status=status.HTTP_200_OK
-            )
-        except Exception as e:
-            #System xatolilari uchun
-            return Response(
-                {"statuse":"error", "message": ERROR_MESSAGES["SYSTEM_ERROR"]},
+                    "status": "error",
+                    "message": str(e)
+                },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-
 
 
 # VERIFY OTP VIEW

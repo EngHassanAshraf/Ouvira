@@ -11,8 +11,8 @@ Ushbu endpoint orqali:
 ### 📝 Request Body
 ```json
     {
-      "primary_mobile": "string",  
-      "full_name": "string"         
+      "primary_mobile": "+998331492022",  
+      "full_name": "nusratullox"         
     }
 ```
 
