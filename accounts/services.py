@@ -1,7 +1,8 @@
 from rest_framework.exceptions import PermissionDenied
-from .models import CustomUser
+from .models import CustomUser, RoleChangeLog
 from core.exceptions import BusinessException
 from core.messages.error import ERROR_MESSAGES
+from django.shortcuts import get_object_or_404
 
 
 
@@ -33,28 +34,30 @@ class UserService:
 
 
 class RoleService:
+    ROLE_HIERARCHY = {
+        "account_owner": 4,
+        "admin": 3,
+        "manager": 2,
+        "employee": 1
+    }
 
-    @staticmethod
-    def change_user_role(actor_user, target_user_id, new_role):
-        target_user = CustomUser.objects.get(id=target_user_id)
+    @classmethod
+    def change_user_role(cls, actor_user, target_user_id, new_role):
+        target_user = get_object_or_404(CustomUser, id=target_user_id)
 
-        # permission tekshiruvi
-        role_hierarchy = {
-            "account_owner": 4,
-            "admin": 3,
-            "manager": 2,
-            "employee": 1
-        }
+        if new_role not in cls.ROLE_HIERARCHY:
+            raise  ValueError("Wrong Role")
 
-        if role_hierarchy.get(actor_user.user_role, 0) <= role_hierarchy.get(target_user.user_role, 0):
-            raise PermissionDenied("Siz bu foydalanuvchining ro'lini ozgartira olmaysiz")
+        if cls.ROLE_HIERARCHY.get(actor_user.user_role, 0) <= cls.ROLE_HIERARCHY.get(target_user.user_role, 0):
+            raise PermissionDenied("You cannot change this user's role.")
 
+        if cls.ROLE_HIERARCHY.get(actor_user.user_role, 0) <= cls.ROLE_HIERARCHY.get(new_role, 0):
+            raise PermissionDenied("You can't give this role away.")
 
         old_role = target_user.user_role
         target_user.user_role = new_role
         target_user.save()
 
-        from .models import RoleChangeLog
         RoleChangeLog.objects.create(
             user=target_user,
             old_role=old_role,

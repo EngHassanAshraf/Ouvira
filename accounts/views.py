@@ -1,11 +1,11 @@
 import datetime
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
-
 from auth_module.serializers import  RegisterOwnerSerializer
 from core.exceptions import BusinessException
 from .services import UserService, RoleService
@@ -45,12 +45,28 @@ class RegisterOwnerView(APIView):
 
 
 class ChangeUserRoleView(APIView):
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def post(self, request, user_id):
         new_role = request.data.get("new_role")
-        user = RoleService.change_user_role(request.user, user_id, new_role)
-        return  Response({"msg": f"{user.username} role {user.user_role} ga o'zgartirildi"})
+
+        if not new_role:
+            return Response({"error": "new_role mandatory"}, status=400)
+
+        try:
+            user = RoleService.change_user_role(
+                request.user,
+                user_id,
+                new_role
+            )
+        except PermissionDenied as e:
+            return Response({"error": str(e)}, status=403)
+        except ValueError as e:
+            return Response({"error": str(e)}, status=400)
+
+        return Response(
+            {"msg": f"{user.username}, Role {user.user_role}, ga o'zgartirildi"}, status=200
+        )
 
 
 class SessionTestAPIView(APIView):

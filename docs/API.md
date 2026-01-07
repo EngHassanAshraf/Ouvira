@@ -1,18 +1,18 @@
 # 📌 POST /api/signup/
 
-Foydalanuvchi yangi account yaratadi va telefon raqamiga **OTP** yuboriladi.  
-Ushbu endpoint orqali:
+The user creates a new account and an `OTP` is sent to the phone number.
+Through this endpoint:
 
-- Telefon raqami va **full name** bilan yangi user yaratish yoki mavjud userni olish
-- Yangi OTP generatsiya qilinadi va **5 daqiqa** davomida amal qiladi
+- Create a new user or retrieve an existing user with a phone number and `full name`
+- A new OTP will be generated and will be valid for `5 minutes`
 
 ---
 
 ### 📝 Request Body
 ```json
     {
-      "primary_mobile": "+998331492022",  
-      "full_name": "nusratullox"         
+      "primary_mobile": "+998907777777",  
+      "full_name": "Alik"         
     }
 ```
 
@@ -42,8 +42,8 @@ Ushbu endpoint orqali:
     }
 ```
 
-- Har safar SignUp chaqirilganda eski OTP’lar o‘chiriladi
-- OTP muddati: 5 daqiqa
+- Old OTPs are deleted every time SignUp is called
+- OTP expiration: `5 minutes`
 ### Response format: 
 ```json:
     {
@@ -57,18 +57,17 @@ Ushbu endpoint orqali:
 ---
 
 
-# 📌 POST /api/otp-verify/
-Foydalanuvchi telefon raqamini **verify** qilish uchun yuborilgan **OTP kodini** tekshiradi.
+# 📌 POST /api/otp-verify/ 
 
-Ushbu endpoint orqali:  
-
-- Telefon raqami va OTP to‘g‘ri bo‘lsa, foydalanuvchi `phone_verified = True` bo‘ladi  
-- Agar OTP noto‘g‘ri bo‘lsa, muddati o‘tgan bo‘lsa yoki `attempts` ko‘p bo‘lsa, mos xabar qaytariladi  
-
----
+- This endpoint is used to verify the OTP code sent to the user's phone number.
+- Through this endpoint:
+- If the phone number and OTP are correct, the user will be marked as phone_verified = `True`
+- If the OTP is incorrect, expired, or the maximum number of attempts has been exceeded, an appropriate error message will be returned
 
 ---
-### AllowAny (login qilmagan foydalanuvchi ham ishlata oladi), `request body`
+
+---
+### AllowAny (Can be used even by non-logged-in users), `request body`
 
 ```
 {
@@ -123,9 +122,9 @@ Ushbu endpoint orqali:
   "message": "No account was found with the provided information."
 }
 ```
-- OTP muddati: `5 daqiqa`
-- Maksimal urinishlar: `5`
-- Block vaqt: `10 daqiqa`
+- OTP validity period: `5 minutes`
+- Maxsimum attempts: `5`
+- Block duration: `10 minutes`
 
 ### Response format:
 ```{
@@ -195,6 +194,110 @@ HTTP Status: 400 Bad Request
 - `OTP` must be verified before assigning user as `Account Owner`
 - Only users with proper permissions can call this endpoint
 - All messages are standardized via `SUCCESS_MESSAGES and ERROR_MESSAGES`
+---
+
+---
+
+# accounts/ user/<int:user_id>/change-role/ [name='change_user_role'] #
+# Description
+Changes the role of a user based on role hierarchy rules.
+Only authenticated users with sufficient privileges can perform this action.
+All role changes are recorded in the audit log.
+
+`Request Body` 
+```
+{
+  "new_role": "manager"
+}
+
+```
+### Allowed Values for new_role
+account_owner
+- admin
+- manager
+- employee
+
+Permission Rules
+A user can only change the role of users with a lower role.
+A user cannot assign a role equal to or higher than their own.
+Employees cannot change roles.
+
+Success Response
+```
+{
+  "msg": "User role has been successfully changed"
+}
+
+```
+
+
+Returned when the request data is invalid.
+
+```
+{
+  "error": "new_role is required"
+}
+```
+
+```
+{
+  "error": "Invalid role"
+}
+```
+
+401 Unauthorized
+
+Returned when authentication credentials are missing or invalid.
+
+```
+{
+  "detail": "Authentication credentials were not provided."
+}
+```
+
+403 Forbidden
+
+Returned when the user does not have permission to change the role.
+
+```
+{
+  "error": "You do not have permission to change this user's role"
+}
+```
+
+404 Not Found
+
+Returned when the target user does not exist.
+
+```
+{
+  "detail": "Not found."
+}
+```
+
+Business Logic
+
+The role change logic is handled in the service layer:
+
+Validates role hierarchy
+
+Prevents unauthorized role escalation
+
+Updates the user role
+
+Writes an audit log entry
+
+- Notes.
+
+   - Only authenticated users can access this endpoint
+
+   - Role changes follow strict hierarchy validation
+
+   - Designed using a clean separation of concerns (View + Service)
+
+
+
+
 ---
 
 ---

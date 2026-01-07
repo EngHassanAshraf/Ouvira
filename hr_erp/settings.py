@@ -41,7 +41,8 @@ SECRET_KEY = 'django-insecure-ot+9o@upl@i8qmdv&je)27bfvz*q)-gf_6i24$_a1t%v5cvel5
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+# settings.py
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 
 
 # Application definition
@@ -125,7 +126,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'hr_erp.wsgi.application'
 SWAGGER_SETTINGS = {
-    'USE_SESSION_AUTH': False,  # JWT ishlatamiz, session auth kerak emas
+    'USE_SESSION_AUTH': True,  # JWT ishlatamiz, session auth kerak emas
     'SECURITY_DEFINITIONS': {
         'Bearer': {
             'type': 'apiKey',
@@ -141,14 +142,15 @@ SWAGGER_SETTINGS = {
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'erp_db',          # yangi database nomi
-        'USER': 'erp_user',        # yangi user nomi
-        'PASSWORD': 'StrongPass123!', # yangi password
-        'HOST': 'localhost',
-        'PORT': '5432',
+        'NAME': os.getenv('DB_NAME'),
+        'USER': os.getenv('DB_USER'),
+        'PASSWORD': os.getenv('DB_PASSWORD'),
+        'HOST': os.getenv('DB_HOST'),
+        'PORT': os.getenv('DB_PORT'),
     }
 }
 

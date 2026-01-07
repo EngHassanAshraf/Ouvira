@@ -59,6 +59,7 @@ class SignUPView(APIView):
             # yangi OTP yaratish
             otp_code = str(random.randint(100000, 999999))
             expires_at = timezone.now() + timedelta(minutes=5)
+            print(otp_code, 'vaqtincha')
 
             OTP.objects.create(
                 phone_number=phone_number,
@@ -66,17 +67,18 @@ class SignUPView(APIView):
                 expires_at=expires_at
             )
 
-            success = send_sms(phone_number,f"Your OTP code is {otp_code}", settings.TWILIO_PHONE_NUMBER)
-            if success:
+            # success = send_sms(phone_number,f"Your OTP code is {otp_code}", settings.TWILIO_PHONE_NUMBER)
+            if otp_code:
                 return Response({
                     "status": "success",
-                    "message": "OTP sent successfully"
+                    "message": "OTP sent successfully",
                 })
             else:
                 return Response({
                     "status": "error",
                     "message": "Failed to send OTP SMS."
                 })
+
         except Exception as e:
             print("SIGNUP ERROR:", str(e))
             return Response(

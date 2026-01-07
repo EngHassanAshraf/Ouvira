@@ -4,7 +4,7 @@ from .models import CustomUser, TwoALoginSession
 
 class CustomUserAdmin(UserAdmin):
     model = CustomUser
-    list_display = ('username', 'full_name', 'primary_mobile',
+    list_display = ('id', 'username', 'full_name', 'primary_mobile',
                     'user_role', 'is_staff', 'is_active', 'is_2fa_enabled',
                     'two_fa_secret', 'two_fa_type', 'backup_codes')
 
