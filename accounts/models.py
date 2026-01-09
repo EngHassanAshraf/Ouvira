@@ -5,6 +5,8 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
 from .manager import UserManager
+import uuid
+
 
 
 class CustomUser(AbstractUser):
@@ -40,19 +42,9 @@ class CustomUser(AbstractUser):
     def __str__(self):
         return self.username
 
-
     def save(self, *args, **kwargs):
         if not self.user_id_number:
-            today = timezone.now().date()   # MUHIM JOY
-            last_user = CustomUser.objects.filter(
-                created_at__date=today
-            ).order_by('-id').first()
-
-            last_id = last_user.id + 1 if last_user else 1
-
-            date_str = today.strftime("%d%m%Y")
-            self.user_id_number = f"USR-{date_str}-{last_id:06d}"
-
+            self.user_id_number = f"USR-{uuid.uuid4().hex[:12].upper()}"
         super().save(*args, **kwargs)
 
     def __str__(self):

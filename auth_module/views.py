@@ -59,7 +59,6 @@ class SignUPView(APIView):
             # yangi OTP yaratish
             otp_code = str(random.randint(100000, 999999))
             expires_at = timezone.now() + timedelta(minutes=5)
-            print(otp_code, 'vaqtincha')
 
             OTP.objects.create(
                 phone_number=phone_number,
@@ -80,7 +79,6 @@ class SignUPView(APIView):
                 })
 
         except Exception as e:
-            print("SIGNUP ERROR:", str(e))
             return Response(
                 {
                     "status": "error",
@@ -208,9 +206,6 @@ class ResentOTPView(APIView):
             is_blocked=False,
             blocked_until=None
         )
-
-        # DEV uchun konsolda ko'rish uchun
-        print(f"resent otp for {phone_number}: {otp_code}")
 
         return Response(
             {
