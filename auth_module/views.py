@@ -1,3 +1,5 @@
+import logging
+
 from django.conf import settings
 from django.db import IntegrityError, DataError, DatabaseError
 from drf_yasg.utils import swagger_auto_schema
@@ -110,6 +112,7 @@ class SignUPView(APIView):
 
 
 # VERIFY OTP VIEW
+logger = logging.getLogger(__name__)
 class OTPVerifyView(APIView):
     permission_classes = [AllowAny]
 
@@ -121,69 +124,81 @@ class OTPVerifyView(APIView):
         phone_number = serializer.validated_data.get('primary_mobile')
         otp_code = serializer.validated_data.get('otp_code')
 
-        if not phone_number or not otp_code:
-            return Response({
-                "statuse":"error", "message": WARNING_MESSAGES["MISSING_FIELDS"]},
-                status=status.HTTP_400_BAD_REQUEST
-            )
 
-        otp_entry = OTP.objects.filter(phone_number=phone_number).first()
-        if not otp_entry:
-            return Response({
-                "status": "warning", "message": WARNING_MESSAGES["OTP_EXPIRED"]},
-                status=status.HTTP_400_BAD_REQUEST)
+        try:
+            otp_entry = OTP.objects.filter(phone_number=phone_number).first()
+            if not otp_entry:
+                return Response({
+                    "status": "warning", "message": WARNING_MESSAGES["OTP_EXPIRED"]},
+                     status=status.HTTP_400_BAD_REQUEST)
 
-        # bloklanganmi tekshirish
-        if otp_entry.is_blocked:
-            if otp_entry.blocked_until and otp_entry.blocked_until > timezone.now():
-                return Response(
-                    {"stats": "error", "message": ERROR_MESSAGES["TOO_MANY_ATTEMPTS"]},
+            if otp_entry.is_blocked:
+                if otp_entry.blocked_until and otp_entry.blocked_until > timezone.now():
+                    return Response(
+                        {"status":"error", "message":ERROR_MESSAGES["OTP_EXPIRED"]},
                     status=status.HTTP_403_FORBIDDEN
-                )
-            else:
-                #block mudati tugagan, attepts reset
+                    )
                 otp_entry.is_blocked = False
                 otp_entry.attempts = 0
                 otp_entry.blocked_until = None
                 otp_entry.save()
 
-        # muddati tugaganmi
-        if otp_entry.expires_at < timezone.now():
-            otp_entry.delete()
-            return Response(
-                {"status": "error", "message": ERROR_MESSAGES["OTP_EXPIRED"]},
-                status=status.HTTP_400_BAD_REQUEST)
 
+            # Expiration check
+            if otp_entry.expires_at < timezone.now():
+                otp_entry.delete()
+                return Response(
+                    {"status": "error", "message": ERROR_MESSAGES["OTP_EXPIRED"]},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
+            #OTP mismatch
+            if otp_entry.otp_code != otp_code:
+                otp_entry.attempts += 1
 
-        # OTP tekshirish
-        if otp_entry.otp_code != otp_code:
-            otp_entry.attempts += 1
-            if otp_entry.attempts >= MAX_ATTEMPTS:
-                otp_entry.is_blocked = True
-                otp_entry.blocked_until = timezone.now() + timedelta(minutes=BLOCK_MINUTES)
-            otp_entry.save()
-            attempts_left = MAX_ATTEMPTS - otp_entry.attempts
-            return Response(
-                {"status": "error", "message":f"{ERROR_MESSAGES['INCORRECT_OTP']} You have{attempts_left} attempts left."},
-                status=status.HTTP_400_BAD_REQUEST)
+                if otp_entry.attempts >= MAX_ATTEMPTS:
+                    otp_entry.is_blocked =True
+                    otp_entry.blocked_until = timezone.now() + timedelta(minutes=BLOCK_MINUTES)
 
-        # to‘g‘ri bo‘lsa
-        user = CustomUser.objects.filter(primary_mobile=phone_number).first()
-        if user:
+                otp_entry.save()
+
+                return Response(
+                    {"status": "error", "message": ERROR_MESSAGES["INCORRECT_OTP"]},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            user = CustomUser.objects.filter(primary_mobile=phone_number).first()
+            if not user:
+                return Response(
+                    {"status": "error", "message": ERROR_MESSAGES["ACCOUNT_NOT_FOUND"]},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
             user.phone_verified = True
             user.save()
-        else:
-            return Response(
-                {"status": "error",
-                 "message": ERROR_MESSAGES["USER_NOT_FOUND"]},
-                  status=status.HTTP_400_BAD_REQUEST)
 
-        otp_entry.delete()
-        return Response(
-            {"status": "success",
-             "message": SUCCESS_MESSAGES["MOBILE_VALIDATED"]},
-            status=status.HTTP_200_OK)
+            otp_entry.delete()
+
+            return Response(
+                {"status": "succes", "message": SUCCESS_MESSAGES["MOBILE_VALIDATED"]},
+                status=status.HTTP_200_OK
+            )
+
+        except DatabaseError as e:
+            logger.exception("Database error during OTP verification")
+            return Response(
+                {"status": "error", "message": ERROR_MESSAGES["SYSTEM_ERROR"]},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+        except Exception as e:
+            logger.exception("Unexpected error during OTP verification")
+            return Response(
+                {"status": "error", "message": ERROR_MESSAGES["SYSTEM_ERROR"]},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
 
 
 
