@@ -56,15 +56,20 @@ TENANT_APPS = (
     "rest_framework",
     "drf_yasg",
     "rest_framework_simplejwt.token_blacklist",
-    "corsheaders",
-    "apps.identity.accounts",
-    "apps.identity.auth_module",
-    "apps.identity.user_activity",
+
+    # local tenant apps
+    "apps.identity.accounts.apps.AccountsConfig",
+    "apps.identity.auth_module.apps.AuthModuleConfig",
+    "apps.identity.user_activity.apps.UserActivityConfig",
+    "apps.company.apps.CompanyConfig",
 )
+
 
 INSTALLED_APPS = SHARED_APPS + [app for app in TENANT_APPS if app not in SHARED_APPS]
 
 AUTH_USER_MODEL = "accounts.CustomUser"
+# AUTH_USER_MODEL = "apps.identity.accounts.CustomUser"
+
 
 
 TENANT_MODEL = "tenant.Tenant"
